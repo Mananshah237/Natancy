@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>For Natancy - A Letter</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500&family=Dancing+Script:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Core Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #333;
+            min-height: 100vh;
+            overflow-x: hidden;
+            cursor: none;
+        }
+
+        /* Custom Cursor */
+        .cursor {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f4c2c2;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transition: transform 0.1s ease;
+            mix-blend-mode: difference;
+        }
+
+        .cursor-dot {
+            width: 4px;
+            height: 4px;
+            background: #f4c2c2;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 10000;
+            transition: transform 0.05s ease;
+        }
+
+        /* Letter Container */
+        .letter-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .letter-card {
+            background: #f9f7f4;
+            border-radius: 20px;
+            padding: 4rem 3rem;
+            max-width: 800px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(244, 194, 194, 0.3);
+            position: relative;
+            opacity: 0;
+            transform: translateY(50px);
+        }
+
+        .letter-card::before,
+        .letter-card::after {
+            content: '';
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background-image: url('./resources/floral-corners.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            opacity: 0.6;
+        }
+
+        .letter-card::before {
+            top: -20px;
+            left: -20px;
+            transform: rotate(0deg);
+        }
+
+        .letter-card::after {
+            bottom: -20px;
+            right: -20px;
+            transform: rotate(180deg);
+        }
+
+        .letter-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .letter-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: #f4c2c2;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #f4c2c2, #c2d4f4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .letter-content {
+            line-height: 1.8;
+            font-size: 1.1rem;
+            color: #4a4a4a;
+            text-align: justify;
+        }
+
+        .letter-paragraph {
+            margin-bottom: 1.5rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .letter-signature {
+            text-align: center;
+            margin-top: 3rem;
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.5rem;
+            color: #f4c2c2;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        .final-candle {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 40px;
+            opacity: 0;
+            z-index: 10;
+        }
+
+        .candle-flame {
+            width: 8px;
+            height: 20px;
+            background: radial-gradient(circle, #ffeb99 0%, #ff8c42 70%, transparent 100%);
+            border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+            animation: gentleFlicker 2s ease-in-out infinite alternate;
+            box-shadow: 0 0 20px rgba(255, 235, 153, 0.8);
+            margin: 0 auto;
+        }
+
+        .candle-body {
+            width: 8px;
+            height: 20px;
+            background: linear-gradient(to bottom, #f4c2c2, #e8a87c);
+            border-radius: 2px;
+            margin: 2px auto 0;
+        }
+
+        .closing-message {
+            text-align: center;
+            margin-top: 2rem;
+            font-style: italic;
+            color: #8a8a8a;
+            font-size: 0.9rem;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        /* Particle Canvas */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* Animations */
+        @keyframes gentleFlicker {
+            0% { transform: scale(1) rotate(-1deg); }
+            100% { transform: scale(1.05) rotate(1deg); }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .letter-card {
+                padding: 2rem 1.5rem;
+                margin: 1rem;
+            }
+            
+            .letter-title {
+                font-size: 2rem;
+            }
+            
+            .letter-content {
+                font-size: 1rem;
+            }
+        }
+
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+
+        /* Special text effects */
+        .highlight-pink {
+            color: #f4c2c2;
+            font-weight: 500;
+        }
+
+        .highlight-blue {
+            color: #c2d4f4;
+            font-weight: 500;
+        }
+
+        .emphasis {
+            font-style: italic;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Custom Cursor -->
+    <div class="cursor"></div>
+    <div class="cursor-dot"></div>
+
+    <!-- Particle Canvas -->
+    <canvas id="particle-canvas"></canvas>
+
+    <!-- Letter Container -->
+    <div class="letter-container">
+        <div class="letter-card" id="letterCard">
+            <div class="letter-header" id="letterHeader">
+                <h1 class="letter-title">🌸 Happy Birthday, Natancy 🌸</h1>
+            </div>
+            
+            <div class="letter-content" id="letterContent">
+                <p class="letter-paragraph">
+                    There are millions of people on this planet, and yet somehow, the universe decided to place you <span class="highlight-pink">inconveniently close to my orbit</span> — close enough to notice, close enough to care, dangerously close enough to matter.
+                </p>
+                
+                <p class="letter-paragraph">
+                    I don't know when it happened, but at some point, you stopped being just a person I talk to and became a <span class="highlight-blue">quiet part of my day I don't want to go without</span>. Suddenly colors aren't just colors — black feels deeper, white feels softer, blue reminds me of calm moments I didn't earn, and pink feels suspiciously like the way my pulse behaves whenever you say something cute.
+                </p>
+                
+                <p class="letter-paragraph">
+                    A girl who drinks coffee like it's a lifeline and treats spicy food like it's a sport shouldn't have this effect on me, yet somehow you do — <span class="emphasis">effortlessly</span>.
+                </p>
+                
+                <p class="letter-paragraph">
+                    And here's the selfish part — in the most shameless way possible, I hope <span class="highlight-pink">no one sees you the way I do</span>. Not because they're blind, but because they wouldn't understand the details I notice. I hope no one admires the way your mind works, the way your smile hesitates before it fully appears, the way your presence turns ordinary moments into something people wish they could bottle.
+                </p>
+                
+                <p class="letter-paragraph">
+                    I'm not saying others shouldn't appreciate you — I just hope their admiration feels <span class="highlight-blue">incomplete compared to mine</span>. I want the world to look at you and be stunned, but also quietly step aside — because they were never meant to stay.
+                </p>
+                
+                <p class="letter-paragraph">
+                    You're the kind of person <span class="highlight-pink">daisies and jasmine would bloom for</span> — gentle without weakness, beautiful without trying, and still unknowingly intimidating. The kind of person who doesn't need attention to be unforgettable; existence does the job for you.
+                </p>
+                
+                <p class="letter-paragraph">
+                    It's absurd, really. You laugh without thinking, not realizing someone memorizes the sound. You talk like it's nothing, not realizing someone pays attention to every word. You simply exist, and somehow that's enough to <span class="highlight-blue">undo a person if they're not careful</span> — and trust me, I stopped being careful a while ago.
+                </p>
+                
+                <p class="letter-paragraph">
+                    If moments had a pause button, I'd use it right here — because something about this exact point in time feels like it <span class="emphasis">shouldn't be rushed through</span>.
+                </p>
+                
+                <p class="letter-paragraph">
+                    So today, I hope your birthday feels like the world finally realizing it's been blessed with you — <span class="highlight-pink">softer air, warmer light, and a little more meaning in places that didn't have any before</span>.
+                </p>
+                
+                <p class="letter-paragraph">
+                    Happy Birthday, Natancy. You deserve joy that overwhelms, moments that linger, and people who don't just show up — but stay. And if fate is paying attention, maybe this is where things stop feeling accidental.
+                </p>
+                
+                <div class="letter-signature" id="letterSignature">
+                    🫣❤️✨
+                </div>
+                
+                <div class="closing-message" id="closingMessage">
+                    Some people blow out candles. Some become them.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Final Candle -->
+    <div class="final-candle" id="finalCandle">
+        <div class="candle-flame"></div>
+        <div class="candle-body"></div>
+    </div>
+
+    <script>
+        class LetterExperience {
+            constructor() {
+                this.particles = [];
+                this.particleCanvas = null;
+                this.particleCtx = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.setupCustomCursor();
+                this.setupParticleSystem();
+                this.startLetterAnimations();
+            }
+
+            setupCustomCursor() {
+                const cursor = document.querySelector('.cursor');
+                const cursorDot = document.querySelector('.cursor-dot');
+
+                document.addEventListener('mousemove', (e) => {
+                    cursor.style.left = e.clientX - 10 + 'px';
+                    cursor.style.top = e.clientY - 10 + 'px';
+                    cursorDot.style.left = e.clientX - 2 + 'px';
+                    cursorDot.style.top = e.clientY - 2 + 'px';
+                });
+
+                document.addEventListener('mousedown', () => {
+                    cursor.style.transform = 'scale(0.8)';
+                    cursorDot.style.transform = 'scale(1.5)';
+                });
+
+                document.addEventListener('mouseup', () => {
+                    cursor.style.transform = 'scale(1)';
+                    cursorDot.style.transform = 'scale(1)';
+                });
+            }
+
+            setupParticleSystem() {
+                this.particleCanvas = document.getElementById('particle-canvas');
+                this.particleCtx = this.particleCanvas.getContext('2d');
+                
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+                
+                this.createParticles();
+                this.animateParticles();
+            }
+
+            resizeCanvas() {
+                this.particleCanvas.width = window.innerWidth;
+                this.particleCanvas.height = window.innerHeight;
+            }
+
+            createParticles() {
+                const particleCount = Math.min(40, Math.floor(window.innerWidth / 25));
+                
+                for (let i = 0; i < particleCount; i++) {
+                    this.particles.push({
+                        x: Math.random() * this.particleCanvas.width,
+                        y: Math.random() * this.particleCanvas.height,
+                        size: Math.random() * 3 + 1,
+                        speedX: (Math.random() - 0.5) * 0.3,
+                        speedY: Math.random() * 0.3 + 0.1,
+                        opacity: Math.random() * 0.6 + 0.1,
+                        color: Math.random() > 0.5 ? '#f4c2c2' : '#c2d4f4',
+                        rotation: Math.random() * 360,
+                        rotationSpeed: (Math.random() - 0.5) * 1
+                    });
+                }
+            }
+
+            animateParticles() {
+                this.particleCtx.clearRect(0, 0, this.particleCanvas.width, this.particleCanvas.height);
+                
+                this.particles.forEach(particle => {
+                    particle.x += particle.speedX;
+                    particle.y += particle.speedY;
+                    particle.rotation += particle.rotationSpeed;
+                    
+                    if (particle.x > this.particleCanvas.width) particle.x = 0;
+                    if (particle.x < 0) particle.x = this.particleCanvas.width;
+                    if (particle.y > this.particleCanvas.height) particle.y = 0;
+                    
+                    this.particleCtx.save();
+                    this.particleCtx.globalAlpha = particle.opacity;
+                    this.particleCtx.fillStyle = particle.color;
+                    this.particleCtx.translate(particle.x, particle.y);
+                    this.particleCtx.rotate(particle.rotation * Math.PI / 180);
+                    
+                    this.particleCtx.beginPath();
+                    this.particleCtx.ellipse(0, 0, particle.size, particle.size * 0.6, 0, 0, Math.PI * 2);
+                    this.particleCtx.fill();
+                    
+                    this.particleCtx.restore();
+                });
+                
+                requestAnimationFrame(() => this.animateParticles());
+            }
+
+            startLetterAnimations() {
+                // Animate letter card appearance
+                anime({
+                    targets: '.letter-card',
+                    opacity: [0, 1],
+                    translateY: [50, 0],
+                    duration: 2000,
+                    easing: 'easeOutExpo',
+                    delay: 500
+                });
+
+                // Animate letter header
+                anime({
+                    targets: '.letter-header',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 1500,
+                    easing: 'easeOutExpo',
+                    delay: 1000
+                });
+
+                // Animate paragraphs with staggered timing
+                const paragraphs = document.querySelectorAll('.letter-paragraph');
+                paragraphs.forEach((paragraph, index) => {
+                    anime({
+                        targets: paragraph,
+                        opacity: [0, 1],
+                        translateY: [20, 0],
+                        duration: 1200,
+                        easing: 'easeOutExpo',
+                        delay: 2000 + (index * 800)
+                    });
+                });
+
+                // Animate signature
+                anime({
+                    targets: '.letter-signature',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 1500,
+                    easing: 'easeOutExpo',
+                    delay: 2000 + (paragraphs.length * 800) + 1000
+                });
+
+                // Animate closing message
+                anime({
+                    targets: '.closing-message',
+                    opacity: [0, 1],
+                    translateY: [20, 0],
+                    duration: 1500,
+                    easing: 'easeOutExpo',
+                    delay: 2000 + (paragraphs.length * 800) + 2000
+                });
+
+                // Show final candle
+                anime({
+                    targets: '.final-candle',
+                    opacity: [0, 1],
+                    duration: 2000,
+                    easing: 'easeOutExpo',
+                    delay: 2000 + (paragraphs.length * 800) + 3000
+                });
+            }
+        }
+
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new LetterExperience();
+        });
+    </script>
+</body>
+</html>
